@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hangman Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #a1c4fd, #c2e9fb);
+            color: #2c3e50;
+            direction: rtl;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .container {
+            max-width: 700px;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+            text-align: center;
+        }
+        .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            margin: 0;
+            font-size: 1.8em;
+            color: #34495e;
+        }
+        select, button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 8px;
+            background: #3498db;
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        select:hover, button:hover { background: #2980b9; }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        .hangman {
+            width: 100px;
+            height: 120px;
+            position: relative;
+            margin: 10px auto;
+        }
+        .hangman div {
+            position: absolute;
+            transition: all 0.3s;
+        }
+        .base { width: 80px; height: 5px; bottom: 0; left: 10px; background: #7f8c8d; }
+        .pole { width: 5px; height: 100px; bottom: 5px; left: 45px; background: #7f8c8d; }
+        .top { width: 40px; height: 5px; top: 0; left: 45px; background: #7f8c8d; }
+        .rope { width: 2px; height: 20px; top: 5px; left: 82px; background: #d35400; }
+        .head { width: 20px; height: 20px; border-radius: 50%; top: 25px; left: 72px; background: #f1c40f; border: 2px solid #e74c3c; }
+        .body { width: 6px; height: 40px; top: 45px; left: 79px; background: #e74c3c; border-radius: 3px; }
+        .left-arm { width: 20px; height: 5px; top: 50px; left: 59px; background: #e74c3c; transform: rotate(45deg); border-radius: 2px; }
+        .right-arm { width: 20px; height: 5px; top: 50px; left: 79px; background: #e74c3c; transform: rotate(-45deg); border-radius: 2px; }
+        .left-leg { width: 20px; height: 5px; top: 85px; left: 59px; background: #e74c3c; transform: rotate(-45deg); border-radius: 2px; }
+        .right-leg { width: 20px; height: 5px; top: 85px; left: 79px; background: #e74c3c; transform: rotate(45deg); border-radius: 2px; }
+
+        .word {
+            font-size: 1.8em;
+            letter-spacing: 8px;
+            margin: 15px 0;
+            color: #2c3e50;
+        }
+        .keyboard {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            max-width: 500px;
+        }
+        .key {
+            padding: 8px 12px;
+            background: #f1c40f;
+            color: #2c3e50;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .key:hover { background: #e67e22; }
+        .key:disabled { background: #dcdcdc; cursor: not-allowed; }
+        .message { font-size: 1.2em; margin: 10px 0; color: #e74c3c; }
+        .records { margin-top: 15px; font-size: 0.9em; color: #34495e; }
+        @media (max-width: 600px) {
+            .container { padding: 15px; }
+            .word { font-size: 1.4em; letter-spacing: 5px; }
+            .key { padding: 6px 10px; }
+            .hangman { width: 80px; height: 100px; }
+        }
+        [lang="en"] body { direction: ltr; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 data-fa="بازی حدس کلمه" data-en="Hangman Game">بازی حدس کلمه</h1>
+            <select id="language" onchange="changeLanguage()">
+                <option value="fa">فارسی</option>
+                <option value="en">English</option>
+            </select>
+        </div>
+        <div class="controls">
+            <select id="difficulty">
+                <option value="easy" data-fa="ساده" data-en="Easy">ساده</option>
+                <option value="medium" data-fa="متوسط" data-en="Medium">متوسط</option>
+                <option value="hard" data-fa="سخت" data-en="Hard">سخت</option>
+            </select>
+            <button onclick="startGame()" data-fa="شروع" data-en="Start">شروع</button>
+        </div>
+        <div class="game-area">
+            <div class="hangman">
+                <div class="base" style="display: none;"></div>
+                <div class="pole" style="display: none;"></div>
+                <div class="top" style="display: none;"></div>
+                <div class="rope" style="display: none;"></div>
+                <div class="head" style="display: none;"></div>
+                <div class="body" style="display: none;"></div>
+                <div class="left-arm" style="display: none;"></div>
+                <div class="right-arm" style="display: none;"></div>
+                <div class="left-leg" style="display: none;"></div>
+                <div class="right-leg" style="display: none;"></div>
+            </div>
+            <div class="word" id="wordDisplay"></div>
+            <div class="message" id="message"></div>
+            <div class="keyboard" id="keyboard"></div>
+            <button id="restart" onclick="startGame()" style="display: none;" data-fa="بازی دوباره" data-en="Play Again">بازی دوباره</button>
+        </div>
+        <div class="records" id="records"></div>
+    </div>
+
+    <script>
+        const words = {
+            fa: [
+                // 100 کلمه ساده (3-5 حرف) - چند نمونه
+                "نه", "بله", "کتاب", "مداد", "خانه", "آب", "نان", "میز", "در", "پنجره",
+                // 100 کلمه متوسط (6-8 حرف) - چند نمونه
+                "مدرسه", "دانشجو", "کارمند", "خیابان", "اتاق", "خانواده", "فروشگاه", "دفتر", "پارک", "ماشین",
+                // 100 کلمه سخت (9+ حرف) - چند نمونه
+                "دانشگاه", "مستندات", "توسعهدهنده", "برنامهنویس", "همکاری", "کارخانه", "رابطهها", "پروژهها", "تحقیقات", "مهندسی"
+                // اینجا باید 290 کلمه دیگه اضافه بشه تا 300 تا بشه
+            ],
+            en: [
+                // 100 کلمه ساده (3-5 حرف) - چند نمونه
+                "cat", "dog", "book", "pen", "home", "car", "bus", "tree", "fish", "bird",
+                // 100 کلمه متوسط (6-8 حرف) - چند نمونه
+                "school", "student", "worker", "street", "window", "family", "market", "office", "garden", "animal",
+                // 100 کلمه سخت (9+ حرف) - چند نمونه
+                "university", "documents", "developer", "programmer", "teamwork", "adventure", "technology", "education", "management", "creativity"
+                // اینجا باید 290 کلمه دیگه اضافه بشه تا 300 تا بشه
+            ]
+        };
+
+        let currentWord = '';
+        let guessedLetters = [];
+        let mistakes = 0;
+        const maxMistakes = 6;
+        let records = JSON.parse(localStorage.getItem('hangmanRecords')) || {};
+
+        function startGame() {
+            const lang = document.getElementById('language').value;
+            const difficulty = document.getElementById('difficulty').value;
+            guessedLetters = [];
+            mistakes = 0;
+            document.getElementById('message').innerText = '';
+            document.getElementById('restart').style.display = 'none';
+            updateHangman();
+
+            const wordList = words[lang].filter(w => {
+                if (difficulty === 'easy') return w.length <= 5;
+                if (difficulty === 'medium') return w.length > 5 && w.length <= 8;
+                return w.length > 8;
+            });
+            currentWord = wordList[Math.floor(Math.random() * wordList.length)];
+            updateWordDisplay();
+            generateKeyboard(lang);
+        }
+
+        function updateWordDisplay() {
+            const display = currentWord.split('').map(letter => 
+                guessedLetters.includes(letter) ? letter : '_'
+            ).join(' ');
+            document.getElementById('wordDisplay').innerText = display;
+            checkWinOrLose();
+        }
+
+        function generateKeyboard(lang) {
+                        const alphabet = lang === 'fa' ? 
+                ' آابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهی'.split('') : 
+                'abcdefghijklmnopqrstuvwxyz'.split('');
+            const keyboard = document.getElementById('keyboard');
+            keyboard.innerHTML = '';
+            alphabet.forEach(letter => {
+                const btn = document.createElement('button');
+                btn.className = 'key';
+                btn.innerText = letter;
+                btn.onclick = () => guessLetter(letter);
+                keyboard.appendChild(btn);
+            });
+        }
+
+        function guessLetter(letter) {
+            if (guessedLetters.includes(letter) || mistakes >= maxMistakes || document.getElementById('wordDisplay').innerText.replace(/ /g, '') === currentWord) return;
+            guessedLetters.push(letter);
+            const btn = Array.from(document.querySelectorAll('.key')).find(b => b.innerText === letter);
+            btn.disabled = true;
+
+            if (!currentWord.includes(letter)) {
+                mistakes++;
+                updateHangman();
+            }
+            updateWordDisplay();
+        }
+
+        function updateHangman() {
+            const parts = ['base', 'pole', 'top', 'rope', 'head', 'body', 'left-arm', 'right-arm', 'left-leg', 'right-leg'];
+            parts.forEach((part, index) => {
+                const el = document.querySelector(`.${part}`);
+                el.style.display = index < mistakes ? 'block' : 'none';
+                if (index === mistakes - 1) el.style.transform = 'scale(1.1)';
+                setTimeout(() => el.style.transform = 'scale(1)', 300);
+            });
+        }
+
+        function checkWinOrLose() {
+            const currentDisplay = document.getElementById('wordDisplay').innerText.replace(/ /g, '');
+            const messageDiv = document.getElementById('message');
+            const restartBtn = document.getElementById('restart');
+
+            if (currentDisplay === currentWord) {
+                messageDiv.innerText = getText('win');
+                const name = prompt(getText('winPrompt'));
+                if (name) {
+                    records[name] = (records[name] || 0) + 1;
+                    localStorage.setItem('hangmanRecords', JSON.stringify(records));
+                    updateRecords();
+                }
+                restartBtn.style.display = 'block';
+            } else if (mistakes >= maxMistakes) {
+                messageDiv.innerText = `${getText('lose')} ${currentWord}`;
+                restartBtn.style.display = 'block';
+            }
+        }
+
+        function updateRecords() {
+            const recordsDiv = document.getElementById('records');
+            const lang = document.getElementById('language').value;
+            recordsDiv.innerHTML = ''; // پاک کردن محتوای قبلی
+
+            const title = document.createElement('h2');
+            title.innerText = lang === 'fa' ? 'رکوردها' : 'Records';
+            recordsDiv.appendChild(title);
+
+            if (Object.keys(records).length === 0) {
+                const noRecords = document.createElement('p');
+                noRecords.innerText = lang === 'fa' ? 'هنوز رکوردی نیست!' : 'No records yet!';
+                recordsDiv.appendChild(noRecords);
+            } else {
+                for (const [name, score] of Object.entries(records)) {
+                    const record = document.createElement('p');
+                    record.innerText = `${name}: ${score}`;
+                    recordsDiv.appendChild(record);
+                }
+            }
+        }
+
+        function changeLanguage() {
+            const lang = document.getElementById('language').value;
+            document.documentElement.lang = lang;
+            document.body.setAttribute('lang', lang);
+            document.querySelectorAll('[data-fa][data-en]').forEach(el => {
+                el.innerText = el.getAttribute(`data-${lang}`);
+            });
+            startGame();
+            updateRecords();
+        }
+
+        function getText(key) {
+            const texts = {
+                win: { fa: 'بردی!', en: 'You won!' },
+                lose: { fa: 'باختی! کلمه:', en: 'You lost! Word:' },
+                winPrompt: { fa: 'اسمت رو وارد کن:', en: 'Enter your name:' }
+            };
+            return texts[key][document.getElementById('language').value];
+        }
+
+        // شروع اولیه
+        startGame();
+        updateRecords();
+    </script>
+</body>
+</html> 
